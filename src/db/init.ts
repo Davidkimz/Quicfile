@@ -1,136 +1,74 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb'
-import type {
-  User,
-  Business,
-  Product,
-  Customer,
-  Transaction,
-  Invoice,
-  Expense,
-  SyncEvent,
-} from '../types'
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
 interface QuicFileDB extends DBSchema {
   users: {
-    key: string
-    value: User
-  }
+    key: string;
+    value: {
+      id: string;
+      email: string;
+      name: string;
+      createdAt: number;
+    };
+  };
   businesses: {
-    key: string
-    value: Business
-    indexes: { 'by-userId': string }
-  }
-  products: {
-    key: string
-    value: Product
-    indexes: { 'by-businessId': string; 'by-barcode': string }
-  }
-  customers: {
-    key: string
-    value: Customer
-    indexes: { 'by-businessId': string }
-  }
-  transactions: {
-    key: string
-    value: Transaction
-    indexes: { 'by-businessId': string; 'by-createdAt': Date }
-  }
-  invoices: {
-    key: string
-    value: Invoice
-    indexes: { 'by-businessId': string }
-  }
-  expenses: {
-    key: string
-    value: Expense
-    indexes: { 'by-businessId': string }
-  }
-  syncEvents: {
-    key: string
-    value: SyncEvent
-    indexes: { 'by-businessId': string; 'by-status': string }
-  }
+    key: string;
+    value: {
+      id: string;
+      userId: string;
+      name: string;
+      description?: string;
+      createdAt: number;
+    };
+  };
+  files: {
+    key: string;
+    value: {
+      id: string;
+      businessId: string;
+      name: string;
+      type: string;
+      size: number;
+      createdAt: number;
+      updatedAt: number;
+      content?: string;
+    };
+    indexes: { 'by-business': string };
+  };
 }
 
-let db: IDBPDatabase<QuicFileDB> | null = null
+let db: IDBPDatabase<QuicFileDB> | null = null;
 
 export async function initializeDatabase(): Promise<IDBPDatabase<QuicFileDB>> {
-  if (db) return db
+  if (db) {
+    return db;
+  }
 
-  db = await openDB<QuicFileDB>('quicfile', 1, {
+  db = await openDB<QuicFileDB>('quicfile-db', 1, {
     upgrade(db) {
-      // Users store
+      // Create users store
       if (!db.objectStoreNames.contains('users')) {
-        db.createObjectStore('users', { keyPath: 'id' })
+        db.createObjectStore('users', { keyPath: 'id' });
       }
 
-      // Businesses store
+      // Create businesses store
       if (!db.objectStoreNames.contains('businesses')) {
-        const businessStore = db.createObjectStore('businesses', {
-          keyPath: 'id',
-        })
-        businessStore.createIndex('by-userId', 'userId')
+        db.createObjectStore('businesses', { keyPath: 'id' });
       }
 
-      // Products store
-      if (!db.objectStoreNames.contains('products')) {
-        const productStore = db.createObjectStore('products', {
-          keyPath: 'id',
-        })
-        productStore.createIndex('by-businessId', 'businessId')
-        productStore.createIndex('by-barcode', 'barcode')
-      }
-
-      // Customers store
-      if (!db.objectStoreNames.contains('customers')) {
-        const customerStore = db.createObjectStore('customers', {
-          keyPath: 'id',
-        })
-        customerStore.createIndex('by-businessId', 'businessId')
-      }
-
-      // Transactions store
-      if (!db.objectStoreNames.contains('transactions')) {
-        const transactionStore = db.createObjectStore('transactions', {
-          keyPath: 'id',
-        })
-        transactionStore.createIndex('by-businessId', 'businessId')
-        transactionStore.createIndex('by-createdAt', 'createdAt')
-      }
-
-      // Invoices store
-      if (!db.objectStoreNames.contains('invoices')) {
-        const invoiceStore = db.createObjectStore('invoices', {
-          keyPath: 'id',
-        })
-        invoiceStore.createIndex('by-businessId', 'businessId')
-      }
-
-      // Expenses store
-      if (!db.objectStoreNames.contains('expenses')) {
-        const expenseStore = db.createObjectStore('expenses', {
-          keyPath: 'id',
-        })
-        expenseStore.createIndex('by-businessId', 'businessId')
-      }
-
-      // Sync Events store
-      if (!db.objectStoreNames.contains('syncEvents')) {
-        const syncStore = db.createObjectStore('syncEvents', {
-          keyPath: 'id',
-        })
-        syncStore.createIndex('by-businessId', 'businessId')
-        syncStore.createIndex('by-status', 'status')
+      // Create files store with index
+      if (!db.objectStoreNames.contains('files')) {
+        const fileStore = db.createObjectStore('files', { keyPath: 'id' });
+        fileStore.createIndex('by-business', 'businessId');
       }
     },
-  })
+  });
 
-  return db
+  return db;
 }
 
-export async function getDB(): Promise<IDBPDatabase<QuicFileDB>> {
+export async function getDatabase(): Promise<IDBPDatabase<QuicFileDB>> {
   if (!db) {
-    return initializeDatabase()
+    return initializeDatabase();
   }
-  return db
+  return db;
 }
