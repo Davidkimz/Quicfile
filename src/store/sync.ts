@@ -1,38 +1,25 @@
-import { create } from 'zustand'
-import type { SyncEvent } from '../types'
+import { create } from 'zustand';
+import { SyncStatus } from '../types';
 
-interface SyncState {
-  pendingEvents: SyncEvent[]
-  addEvent: (event: SyncEvent) => void
-  removeEvent: (eventId: string) => void
-  markAsSynced: (eventId: string) => void
-  getPendingCount: (businessId: string) => number
+interface SyncStore {
+  status: SyncStatus;
+  lastSyncTime: number | null;
+  pendingSyncCount: number;
+  setStatus: (status: SyncStatus) => void;
+  setLastSyncTime: (time: number) => void;
+  setPendingSyncCount: (count: number) => void;
+  incrementPendingSync: () => void;
+  decrementPendingSync: () => void;
 }
 
-export const useSyncStore = create<SyncState>()((set, get) => ({
-  pendingEvents: [],
-
-  addEvent: (event) =>
-    set((state) => ({
-      pendingEvents: [...state.pendingEvents, event],
-    })),
-
-  removeEvent: (eventId) =>
-    set((state) => ({
-      pendingEvents: state.pendingEvents.filter((e) => e.id !== eventId),
-    })),
-
-  markAsSynced: (eventId) =>
-    set((state) => ({
-      pendingEvents: state.pendingEvents.map((e) =>
-        e.id === eventId ? { ...e, status: 'synced', syncedAt: new Date() } : e
-      ),
-    })),
-
-  getPendingCount: (businessId) => {
-    const { pendingEvents } = get()
-    return pendingEvents.filter(
-      (e) => e.businessId === businessId && e.status === 'pending'
-    ).length
-  },
-}))
+export const useSyncStore = create<SyncStore>((set) => ({
+  status: 'offline',
+  lastSyncTime: null,
+  pendingSyncCount: 0,
+  setStatus: (status) => set({ status }),
+  setLastSyncTime: (time) => set({ lastSyncTime: time }),
+  setPendingSyncCount: (count) => set({ pendingSyncCount: count }),
+  incrementPendingSync: () => set((state) => ({ pendingSyncCount: state.pendingSyncCount + 1 })),
+  decrementPendingSync: () =>
+    set((state) => ({ pendingSyncCount: Math.max(0, state.pendingSyncCount - 1) })),
+}));
