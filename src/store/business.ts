@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 
+export type BusinessType = 'service' | 'shop';
+
 interface Business {
   id: string;
   name: string;
   description?: string;
+  type: BusinessType;
 }
 
 interface BusinessStore {
